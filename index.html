@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Guardianes de la Huerta</title>
+<style>
+:root{--ink:#2b3a2b;--card:#fff;--green:#43a047;--dark:#2e7d32;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:"Baloo 2","Comic Sans MS","Trebuchet MS",sans-serif;color:var(--ink);background:#bde9ff linear-gradient(#bde9ff 0%,#e9f9d8 70%,#8bc34a 100%) fixed;text-align:center}
+#app{max-width:760px;margin:0 auto;padding:12px 14px 40px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:700}
+.dots span{display:inline-block;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--green);margin:0 3px}
+.dots .on{background:#ffca28;border-color:#f9a825}
+.card{background:var(--card);border-radius:26px;padding:16px;margin-top:12px;box-shadow:0 6px 0 rgba(46,125,50,.25)}
+h1{font-size:clamp(26px,6vw,40px);margin:6px 0;color:var(--dark)}
+h2{font-size:clamp(22px,5vw,30px);margin:4px 0;color:var(--dark)}
+p{font-size:clamp(18px,4vw,24px);margin:6px 0}
+button{font-family:inherit;cursor:pointer;border:0;border-radius:22px;font-weight:800;font-size:clamp(20px,4.5vw,28px);padding:14px 22px;margin:6px;background:var(--green);color:#fff;box-shadow:0 5px 0 var(--dark);min-height:56px}
+button:active{transform:translateY(3px);box-shadow:0 2px 0 var(--dark)}
+button.alt{background:#fff;color:var(--dark);border:3px solid var(--green)}
+button.say{background:#42a5f5;box-shadow:0 5px 0 #1976d2;font-size:20px;padding:8px 14px;min-height:44px}
+.row{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+.pick{background:#f1f8e9;border:4px solid transparent;border-radius:22px;padding:8px;box-shadow:none;color:var(--ink);font-size:20px}
+.pick.sel{border-color:#ffb300;background:#fff8e1}
+.big{font-size:56px;line-height:1.1}
+.msg{min-height:34px;font-size:clamp(18px,4vw,24px);font-weight:700;color:#d84315}
+.msg.ok{color:var(--dark)}
+.bin{width:130px;color:#fff;font-size:20px}
+.item{font-size:54px;background:#fff;border:4px solid #c5e1a5;border-radius:20px;padding:6px 14px;box-shadow:none;min-height:0;color:inherit}
+.item.sel{border-color:#ffb300;transform:scale(1.12)}
+.item.gone{visibility:hidden}
+.drop{animation:fall 1.2s ease-in infinite}
+@keyframes fall{0%{transform:translateY(-25px);opacity:0}30%{opacity:1}100%{transform:translateY(55px);opacity:0}}
+.bob{animation:bob 2.2s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8px)}}
+.shake{animation:sh .4s}
+@keyframes sh{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.breath{width:90px;height:90px;border-radius:50%;background:#81d4fa;margin:10px auto;animation:br 8s ease-in-out infinite}
+@keyframes br{50%{transform:scale(1.6)}}
+.cert{border:8px dashed #ffb300;border-radius:24px;padding:12px;background:#fffde7}
+.stars{font-size:40px}
+input.nm{font-family:inherit;font-size:clamp(24px,6vw,34px);font-weight:800;text-align:center;border:4px solid var(--green);border-radius:20px;padding:10px;width:min(100%,380px);color:var(--ink);background:#fff}
+.stage{position:relative;height:310px;max-width:520px;margin:8px auto;touch-action:none}
+#tool{position:absolute;left:6px;top:6px;z-index:5;cursor:grab;touch-action:none;user-select:none;filter:drop-shadow(0 4px 3px rgba(0,0,0,.25))}
+#pl{position:absolute;right:0;bottom:0;width:200px}
+.stage .kidbox{position:absolute;left:0;bottom:0}
+.pw{position:absolute;font-size:26px;animation:pour .8s ease-in infinite;z-index:4}
+@keyframes pour{0%{transform:translateY(0);opacity:0}20%{opacity:1}100%{transform:translateY(90px);opacity:0}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style></head><body><div id="app"></div>
+<script>
+var KIDS=[{g:"guardián",skin:"#f5cba7",hair:"#4a2c17",shirt:"#ffd54f"},{g:"guardiana",skin:"#c68642",hair:"#1b1b1b",shirt:"#4fc3f7"},{g:"guardián",skin:"#8d5524",hair:"#2b1a10",shirt:"#f48fb1"}];
+var S={name:"",busy:0,k:0,sc:0,step:0,placed:0,sel:null,good:{},faces:{},msg:"",ok:false};
+var NAMES=["Elige tu guardián","Siembra","Recicla","Acciones","Diario","Diploma"];
+
+function kid(i,w){var k=KIDS[i];return '<svg class="bob" width="'+w+'" viewBox="0 0 100 135" role="img" aria-label="Niño guardián con chaleco verde">'+
+'<rect x="33" y="100" width="12" height="26" rx="5" fill="#3949ab"/><rect x="55" y="100" width="12" height="26" rx="5" fill="#3949ab"/>'+
+'<ellipse cx="39" cy="128" rx="10" ry="5" fill="#6d4c41"/><ellipse cx="61" cy="128" rx="10" ry="5" fill="#6d4c41"/>'+
+'<rect x="14" y="58" width="14" height="36" rx="7" fill="'+k.shirt+'"/><rect x="72" y="58" width="14" height="36" rx="7" fill="'+k.shirt+'"/>'+
+'<circle cx="21" cy="96" r="7" fill="'+k.skin+'"/><circle cx="79" cy="96" r="7" fill="'+k.skin+'"/>'+
+'<rect x="26" y="54" width="48" height="52" rx="10" fill="'+k.shirt+'"/>'+
+'<path d="M26 58 h20 v48 h-16 a4 4 0 0 1 -4 -4z M54 58 h20 v44 a4 4 0 0 1 -4 4 h-16z" fill="#43a047"/><rect x="26" y="78" width="48" height="19" fill="#2e7d32"/>'+
+'<text x="50" y="87" font-size="7.2" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial,sans-serif">GUARDIANES</text>'+
+'<text x="50" y="95" font-size="6" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial,sans-serif">DE LA HUERTA</text>'+
+'<circle cx="50" cy="32" r="22" fill="'+k.skin+'"/><path d="M28 30 a22 22 0 0 1 44 0 q-22 -12 -44 0z" fill="'+k.hair+'"/>'+
+'<circle cx="42" cy="34" r="3" fill="#222"/><circle cx="58" cy="34" r="3" fill="#222"/><path d="M42 44 q8 8 16 0" stroke="#c0392b" stroke-width="3" fill="none" stroke-linecap="round"/>'+
+'<circle cx="36" cy="42" r="3.5" fill="#ff8a80" opacity=".6"/><circle cx="64" cy="42" r="3.5" fill="#ff8a80" opacity=".6"/></svg>'}
+
+function plant(s,w){var o='<svg width="'+(w||230)+'" viewBox="0 0 200 220" role="img" aria-label="Maceta con planta">';
+if(s>=4)o+='<g class="bob"><circle cx="165" cy="35" r="20" fill="#ffca28"/><g stroke="#ffca28" stroke-width="4" stroke-linecap="round"><path d="M165 5v-0M165 65v0M135 35h-8M195 35h8M144 14l-6-6M186 56l6 6M186 14l6-6M144 56l-6 6"/></g></g>';
+if(s>=3){var top=s>=4?85:120;o+='<path d="M100 160 V'+top+'" stroke="#2e7d32" stroke-width="7" stroke-linecap="round"/><ellipse cx="78" cy="'+(top+25)+'" rx="22" ry="10" fill="#66bb6a" transform="rotate(-25 78 '+(top+25)+')"/><ellipse cx="122" cy="'+(top+35)+'" rx="22" ry="10" fill="#66bb6a" transform="rotate(25 122 '+(top+35)+')"/>';}
+if(s>=4){o+='<g fill="#f06292">';for(var a=0;a<6;a++)o+='<circle cx="'+(100+22*Math.cos(a*1.047)).toFixed(1)+'" cy="'+(70+22*Math.sin(a*1.047)).toFixed(1)+'" r="13"/>';o+='</g><circle cx="100" cy="70" r="13" fill="#ffca28"/>';}
+if(s>=2&&s<3)o+='<ellipse cx="100" cy="156" rx="9" ry="6" fill="#8d6e63"/>';
+o+='<path d="M55 160 h90 l-12 52 h-66z" fill="#d2691e"/><rect x="50" y="152" width="100" height="14" rx="6" fill="#e07b39"/>';
+if(s>=1)o+='<ellipse cx="100" cy="156" rx="46" ry="6" fill="#6d4c41"/>';
+return o+'</svg>'}
+
+function say(t){try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(t);u.lang="es-CO";u.rate=.85;speechSynthesis.speak(u)}catch(e){}}
+function esc(t){return String(t).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function sayBtn(t){return '<button class="say" onclick="say(this.dataset.t)" data-t="'+esc(t)+'" aria-label="Escuchar">🔊 Escuchar</button>'}
+function go(n){S.sc=n;S.msg="";S.sel=null;render();window.scrollTo(0,0)}
+function msg(t,ok){S.msg=t;S.ok=!!ok;var m=document.getElementById("m");if(m){m.textContent=t;m.className="msg"+(ok?" ok":"")}}
+function head(t,sp){return '<h2>'+t+'</h2><p>'+sp+'</p>'+sayBtn(sp)}
+function next(l,n){return '<div><button onclick="go('+n+')">'+l+' ➜</button></div>'}
+
+function render(){var a=document.getElementById("app"),h='<div class="top"><span>🌱 Guardianes de la Huerta</span><span class="dots">';
+for(var i=1;i<=4;i++)h+='<span class="'+(S.sc>=i?"on":"")+'"></span>';
+h+='</span><button class="alt" style="font-size:16px;min-height:40px;padding:6px 12px" onclick="pause()">🧘 Pausa</button></div><div class="card">';
+var k=KIDS[S.k];
+if(S.sc==0){h+='<h1>¡Guardianes de la Huerta!</h1>'+head("Primer momento: ¿cómo te llamas?","Escribe tu nombre. Luego elige a tu guardián.")+'<p><input class="nm" id="nm" maxlength="20" placeholder="Escribe tu nombre" value="'+esc(S.name)+'" oninput="S.name=this.value" aria-label="Tu nombre"></p><div class="row">';
+KIDS.forEach(function(x,i){h+='<button class="pick'+(S.k==i?" sel":"")+'" onclick="S.k='+i+';render()">'+kid(i,120)+'</button>'});
+h+='</div><div id="m" class="msg"></div><div><button onclick="start()">¡Vamos! ➜</button></div>'}
+else if(S.sc==1){var IN=["Arrastra la tierra hasta la maceta.","Arrastra la semilla hasta la maceta.","Agarra la regadera y échale agua a la maceta.","Arrastra el sol hasta tu planta."];
+h+=head("Manos a la obra: siembra",S.step<4?IN[S.step]:"¡Lo lograste!");
+h+='<div class="stars">'+[0,1,2,3].map(function(i){return S.step>i?"✅":"⬜"}).join(" ")+'</div><div class="stage" id="stage">';
+if(S.step<4)h+='<div id="tool">'+TOOLS[S.step]+'</div>';
+h+='<div class="kidbox">'+kid(S.k,100)+'</div><div id="pl">'+plant(S.step,200)+'</div></div><div id="m" class="msg"></div>';
+if(S.step>=4)h+='<p class="msg ok">🌸 ¡Tu planta creció! ¡Eres un gran guardián!</p>'+next("Siguiente misión",2)}
+else if(S.sc==2){h+=head("Cuida el entorno: recicla","Toca un objeto y luego toca la caneca donde va.")+'<div class="row" id="items">';
+var I=[["🍌","o","la cáscara de banano"],["📰","r","el periódico"],["🥤","r","la botella de plástico"],["🍬","n","la envoltura de dulce"],["🍎","o","el resto de manzana"]];
+I.forEach(function(x,i){h+='<button class="item'+(S.placed&(1<<i)?" gone":"")+(S.sel===i?" sel":"")+'" onclick="selItem('+i+')" aria-label="'+x[2]+'">'+x[0]+'</button>'});
+h+='</div><div class="row">';
+[["o","🌿 Orgánico","#43a047"],["r","♻️ Reciclable","#1e88e5"],["n","🗑️ No reciclable","#757575"]].forEach(function(b){h+='<button class="bin" style="background:'+b[2]+';box-shadow:0 5px 0 rgba(0,0,0,.3)" onclick="bin(\''+b[0]+'\')">'+b[1]+'</button>'});
+h+='</div><div id="m" class="msg"></div>';
+if(S.placed==31)h+='<p class="msg ok">🎉 ¡La huerta quedó limpia!</p>'+next("Siguiente misión",3)}
+else if(S.sc==3){h+=head("¿Qué hace un guardián?","Toca las 3 cosas que hace un buen guardián de la huerta.")+'<div class="row">';
+[["🚰","Cierra la llave del agua",1],["🗑️","Tira basura al piso",0],["🐞","Cuida a los insectos buenos",1],["👣","Pisa las plantas",0],["🤝","Ayuda a sus compañeros",1],["💧","Deja el agua corriendo",0]].forEach(function(x,i){
+var st=S.good[i];h+='<button class="pick" style="width:150px;'+(st==1?"border-color:#43a047;background:#e8f5e9":"")+'" onclick="act('+i+','+x[2]+',this)"><span class="big">'+x[0]+'</span><br><span style="font-size:17px">'+x[1]+(st==1?" ✅":"")+'</span></button>'});
+h+='</div><div id="m" class="msg"></div>';
+if(Object.keys(S.good).length>=3)h+=next("Ir al diario",4)}
+else if(S.sc==4){h+=head("Autoevaluación: mi diario","Toca la carita que dice cómo lo hiciste hoy.")+'<div class="stars">📖 ✏️ 🎤</div><p style="font-size:17px">En tu diario puedes dibujar, escribir o contar con tu voz.</p>';
+[["cuidé las plantas","Cuidé las plantas"],["ayudé a mis compañeros","Ayudé a mis compañeros"],["cuidé el medio ambiente","Cuidé el medio ambiente"]].forEach(function(q){h+='<p><b>'+q[1]+'</b></p><div class="row">';
+[["😄","Siempre"],["😐","A veces"],["😕","Pocas veces"]].forEach(function(f){h+='<button class="pick'+(S.faces[q[0]]==f[0]?" sel":"")+'" onclick="S.faces[\''+q[0]+'\']=\''+f[0]+'\';render()"><span class="big">'+f[0]+'</span><br>'+f[1]+'</button>'});h+='</div>'});
+if(Object.keys(S.faces).length>=3)h+=next("Ver mi diploma",5)}
+else{h+='<div class="cert"><div class="stars">⭐⭐⭐⭐⭐</div><h1>¡Felicitaciones!</h1><div class="row">'+kid(S.k,170)+plant(4)+'</div><h2>'+esc(nm())+' es '+k.g+' de la huerta</h2><p>Cuidar las plantas, el agua y el entorno nos hace más fuertes. 🌎💚</p></div>'+sayBtn("Felicitaciones "+nm()+". Eres "+k.g+" de la huerta. Cuidar las plantas, el agua y el entorno nos hace más fuertes.")+'<div><button class="alt" onclick="again()">🔄 Jugar otra vez</button></div>'}
+a.innerHTML=h+'</div>';setupDrag()}
+
+var TOOLS=['<svg width="95" viewBox="0 0 100 80"><path d="M5 75 Q15 25 50 22 Q85 25 95 75z" fill="#6d4c41"/><circle cx="35" cy="55" r="5" fill="#8d6e63"/><circle cx="62" cy="48" r="4" fill="#4e342e"/><circle cx="50" cy="65" r="5" fill="#4e342e"/></svg>',
+'<svg width="70" viewBox="0 0 60 60"><ellipse cx="30" cy="30" rx="16" ry="22" fill="#8d6e63" transform="rotate(25 30 30)"/><ellipse cx="25" cy="22" rx="4" ry="8" fill="#bcaaa4" transform="rotate(25 25 22)"/></svg>',
+'<svg width="115" viewBox="0 0 130 100"><path d="M25 48 Q0 48 5 66 Q8 80 25 76" stroke="#1976d2" stroke-width="6" fill="none"/><path d="M85 72 L118 30" stroke="#1976d2" stroke-width="9" stroke-linecap="round"/><ellipse cx="119" cy="27" rx="7" ry="12" fill="#1565c0" transform="rotate(35 119 27)"/><rect x="20" y="35" width="68" height="55" rx="12" fill="#42a5f5"/><rect x="30" y="45" width="48" height="8" rx="4" fill="#90caf9"/></svg>',
+'<svg width="90" viewBox="0 0 100 100"><circle cx="50" cy="50" r="22" fill="#ffca28"/><g stroke="#ffb300" stroke-width="6" stroke-linecap="round"><path d="M50 10v10M50 80v10M10 50h10M80 50h10M22 22l7 7M71 71l7 7M78 22l-7 7M29 71l-7 7"/></g></svg>'];
+function nm(){return S.name.trim()||"Guardián"}
+function start(){if(!S.name.trim()){msg("Escribe tu nombre para empezar ✏️");var n=document.getElementById("nm");if(n)n.focus();return}S.name=S.name.trim();say("Hola "+S.name+". Vamos a la huerta.");go(1)}
+function setupDrag(){var t=document.getElementById("tool");if(!t)return;var pl=document.getElementById("pl"),st=document.getElementById("stage"),d=0,sx,sy,o;
+t.onpointerdown=function(e){if(S.busy)return;d=1;sx=e.clientX;sy=e.clientY;o=t.getBoundingClientRect();t.style.transition="none";t.setPointerCapture(e.pointerId);t.style.cursor="grabbing"};
+t.onpointermove=function(e){if(d)t.style.transform="translate("+(e.clientX-sx)+"px,"+(e.clientY-sy)+"px) scale(1.1)"};
+t.onpointerup=function(e){if(!d)return;d=0;var r=t.getBoundingClientRect(),p=pl.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+if(!(cx>p.left-15&&cx<p.right+15&&cy>p.top-30&&cy<p.bottom+15)){t.style.transition="transform .35s";t.style.transform="";msg("Llévalo hasta la maceta 👉");return}
+S.busy=1;msg("");t.style.transition="transform .45s";var w=o.width,h=o.height,tx,ty;
+if(S.step==2){tx=p.left+p.width*.5-w*.95-o.left;ty=p.top+p.height*.5-h*.55-o.top;t.style.transform="translate("+tx+"px,"+ty+"px) rotate(28deg)";
+setTimeout(function(){var sr=st.getBoundingClientRect();for(var i=0;i<7;i++){var s2=document.createElement("span");s2.className="pw";s2.textContent="💧";s2.style.left=(o.left+tx+w*.98-sr.left+(i%3)*8)+"px";s2.style.top=(o.top+ty+h*.62-sr.top)+"px";s2.style.animationDelay=(i*.11)+"s";st.appendChild(s2)}say("Regando")},450);
+setTimeout(adv,2300)}
+else{tx=p.left+p.width/2-w/2-o.left;ty=p.top+p.height*.55-h/2-o.top;t.style.transform="translate("+tx+"px,"+ty+"px) scale(.8)";setTimeout(adv,550)}}}
+function adv(){S.busy=0;S.step++;say(["Tierra lista","Semilla lista","Regado","¡La planta creció!"][S.step-1]);render()}
+function selItem(i){if(S.placed&(1<<i))return;S.sel=i;render()}
+var KIND=["o","r","r","n","o"];
+function bin(t){if(S.sel===null){msg("Primero toca un objeto 👆");return}
+if(KIND[S.sel]==t){S.placed|=1<<S.sel;S.sel=null;S.msg="";render();if(S.placed!=31)msg("¡Muy bien! 🌟",1);else say("La huerta quedó limpia")}
+else{msg("¡Casi! Prueba en otra caneca 💪");document.getElementById("app").classList.add("shake");setTimeout(function(){document.getElementById("app").classList.remove("shake")},400)}}
+function act(i,g,b){if(g){S.good[i]=1;render();msg("¡Eso hace un guardián! 💚",1)}else msg("Un guardián no hace eso. ¡Busca otra! 🔎")}
+function pause(){var o=document.createElement("div");o.style.cssText="position:fixed;inset:0;background:rgba(0,60,40,.9);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9;padding:20px";
+o.innerHTML='<h1 style="color:#fff">🧘 Pausa activa</h1><p style="color:#fff">Respira profundo… sube… y suelta el aire.</p><div class="breath"></div><button onclick="this.parentNode.remove()">Seguir jugando</button>';document.body.appendChild(o);say("Respira profundo, y suelta el aire despacio.")}
+function again(){S.sc=0;S.step=0;S.placed=0;S.good={};S.faces={};render()}
+render();
+</script></body></html>
